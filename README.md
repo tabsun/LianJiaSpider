@@ -1,7 +1,16 @@
-##链家爬虫
+##自用爬虫
 
-爬取北京地区链家历年二手房成交记录。[链家爬虫](http://lanbing510.info/2016/03/15/Lianjia-Spider.html)一文的全部代码，包括链家模拟登录代码。
 
-###爬取数据的部分截图
+### Requirements
 
-![Aaron Swartz](https://github.com/lanbing510/LianJiaSpider/raw/master/screenshots/lianjia.jpg)
+shadowsocks
+
+polipo(set proxy for urllib2 in python)
+
+### Points
+
+1. Set proxy for oversea sites
+
+2. BeautifulSoup usage
+
+3. Login operation for some sites
