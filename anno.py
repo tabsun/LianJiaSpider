@@ -20,12 +20,12 @@ def show_annos():
 def pick_one_hot(event,x,y,flags,param):
     if event == cv2.EVENT_LBUTTONDOWN:
         scale = get_scale()
-        annos.append([int(x/scale),int(y/scale),int(10.0/scale)])
+        annos.append([int(x/scale),int(y/scale),int(60.0/scale)])
         show_annos()
         
 DIR = './Images'
 ANNO_FILE = './anno.csv'
-show_annotations = False
+show_annotations = True
 with open(ANNO_FILE, 'r') as f:
     lines = f.readlines()
     if show_annotations:
