@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
+import os
 import json
 import urllib2  
 import sqlite3
@@ -215,13 +216,16 @@ def chengjiao_region_spider(db_cj, region):
 
 
 if __name__=="__main__":
+    if os.path.exists("./lianjia-cj.db"):
+        os.remove("./lianjia-cj.db")
+
     command="create table if not exists chengjiao (url TEXT primary key UNIQUE, xq_name TEXT, sold_in_90_days INT, to_be_rent INT, house_num INT, mean_price INT, selling INT, address TEXT)"
     db_cj=SQLiteWraper('lianjia-cj.db',command)
     
     #chengjiao_page_spider(db_cj, 'heping', 1)
     #爬下所有小区里的成交信息
-    #for region in regions:
-    #    chengjiao_region_spider(db_cj, region)
+    for region in regions:
+        chengjiao_region_spider(db_cj, region)
 
     data = db_cj.fetchall()
     infos = []
@@ -253,4 +257,5 @@ if __name__=="__main__":
         infos.append(info)
 
     with open('data.json', 'w') as f:
-        json.dump(infos, f)
+        content = json.dumps(infos)
+        f.write("data = '%s';" % content)

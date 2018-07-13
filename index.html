@@ -10,28 +10,59 @@
             height: 100%;
             margin: 0;
             padding: 0;
-            overflow: scroll;
+            overflow: hidden;
         }
 
         #map {
             width: 100%;
             height: 100%;
         }
+        .dropbtn {
+            background-color: rgba(44,95,40,0.8);
+            color: white;
+            padding: 16px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+        }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: rgba(38,78,33,0.8);
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.8);
+        }
+        .dropdown-content a {
+            color: white;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+        .dropdown-content a:hover {background-color: #2e7e31}
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+        .dropdown:hover .dropbtn {
+            background-color: rgba(38,78,33,0.8);
+        }
     </style>
+    
 </head>
 <body>
 
-    <p id="display_for_me">Contents</p>
+
     <div id="map"></div>
     <canvas id="canvas"></canvas>
-
+    <script type="text/javascript" src="js/buttons.js"></script>
     <script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
     <script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=1XjLLEhZhQNUzd93EjU5nOGQ"></script>
-    <script type="text/javascript" src="../build/mapv.js"></script>
-    <script type="text/javascript" src="./require.js"></script>
+    <script type="text/javascript" src="http://api.map.baidu.com/library/Heatmap/2.0/src/Heatmap_min.js"></script>
     <script type="text/javascript" src="./data.json"></script>
     <script type="text/javascript">
-        const fs = require(['fs']);
         var infos = JSON.parse(data);
 
         // 百度地图API功能
@@ -41,38 +72,79 @@
         map.centerAndZoom(new BMap.Point(117.194016,39.110499), 14);  // 初始化地图,设置中心点坐标和地图级别
         map.enableScrollWheelZoom(true); // 开启鼠标滚轮缩放
 
-        // 查找某个地址位置
+        // add select button
+        var cr = new BMap.CopyrightControl({anchor:BMAP_ANCHOR_TOP_LEFT});
+        map.addControl(cr);
+        var bs = map.getBounds();
+        cr.addCopyright({id: 1, content:'<div class="dropdown"><button class="dropbtn">Select</button><div class="dropdown-content"><a style="color:white" onclick="select_show(0)">成交</a><a style="color:white" onclick="select_show(1)">在售</a><a style="color:white" onclick="select_show(2)">在租</a><a style="color:white" onclick="select_show(3)">学区房价格</a></div></div>', bounds:bs});
+        // try to get missing xiaoqu's point
         var myGeo = new BMap.Geocoder();
         var total_num = infos.length;
-        alert(total_num);
-        var obj = { table:[]};
-        var start = 2360;
-        var run_num = total_num;
-        var index = start;
-        
+
+        var index = 0;
         function bdGEO(){
-            var address = infos[index].address;
-            var name = infos[index].name;
-            geocodeSearch(name, address);
-            index++;
-        }
-        function geocodeSearch(xq_name, address){
-            if(index < run_num){
-                setTimeout(window.bdGEO, 400);
+            while(index < total_num){
+                if(infos[index].lng == -1.0){
+                    setTimeout(window.geocodeSearch,800);
+                }
+                index++;
             }
+        }
+        function geocodeSearch(){
+            var address = infos[index].address
+            var name = infos[index].name
             myGeo.getPoint(address, function(point){
                 if(point){
-                    obj.table.push({name:xq_name, lng:point.lng, lat:point.lat});
+                    infos[index]['lng'] = point.lng;
+                    infos[index]['lat'] = point.lat;
                 }else{
+                    myGeo.getPoint(name, function(point){
+                    if(point){
+                        infos[index]['lng'] = point.lng;
+                        infos[index]['lat'] = point.lat;
+                    }else{}
+                    }, "天津市");
                 }
             }, "天津市");
         }
+        // heatmap display
+        heatmapOverlay = new BMapLib.HeatmapOverlay({"radius":40});
+        map.addOverlay(heatmapOverlay);
+        function select_show(item_id){
+            heatmapOverlay.hide();
+            heat_points = [];
+            var ite = 0;
+            var max_val = 0;
+            while(ite < total_num){
+                if(infos[ite].lng != -1.0){
+                    var heat_point = {};
+                    heat_point['lng'] = infos[ite].lng;
+                    heat_point['lat'] = infos[ite].lat;
+                    if(item_id == 0){
+                        heat_point['count'] = infos[ite].sold;
+                    }
+                    if(item_id == 1){
+                        heat_point['count'] = infos[ite].selling;
+                    }
+                    if(item_id == 2){
+                        heat_point['count'] = infos[ite].renting;
+                    }
+                    if(item_id == 3){
+                        heat_point['count'] = infos[ite].price;
+                    }
+                    max_val = Math.max(max_val, heat_point['count']);
+                    heat_points.push(heat_point); 
+                }
+                ite ++;
+            }
+            heatmapOverlay.setDataSet({data:heat_points, max:max_val});
+            heatmapOverlay.show();
+        }
         bdGEO();
         setTimeout(function(){
-            alert("done");
-            var json = JSON.stringify(obj);
-            document.getElementById("display_for_me").innerHTML = json;
-            }, 400*(run_num-start));
+            select_show(0);
+            //closeHeatmap();
+            }, 1000);
         
         // 地图自定义样式
         map.setMapStyle({
@@ -198,6 +270,5 @@
 
 
     </script>
-	
 </body>
 </html>
